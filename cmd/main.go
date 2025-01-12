@@ -1,47 +1,50 @@
 package main
 
 import (
-    "fmt"
-    "github.com/JonasJs/hue/internal"
-    "io/ioutil"
-    "os"
+	"fmt"
+	"hue/internal"
+	"os"
 )
 
 func main() {
-    if len(os.Args) > 1 {
-        file := os.Args[1]
-        if err := runFile(file); err != nil {
-            fmt.Printf("Error executing the file %s: %v\n", file, err)
-        }
-    } else {
-        runRepl()
-    }
+	if len(os.Args) > 1 {
+		file := os.Args[1]
+		if err := runFile(file); err != nil {
+			fmt.Printf("Erro ao executar o arquivo %s: %v\n", file, err)
+		}
+	} else {
+		runRepl()
+	}
 }
 
+// runFile executa o arquivo e faz o lexing e parsing.
 func runFile(filename string) error {
-    if ext := getFileExtension(filename); ext != ".hue" {
-        return fmt.Errorf("invalid extension: %s (expected .hue)", ext)
-    }
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		return err
+	}
 
-    content, err := ioutil.ReadFile(filename)
-    if err != nil {
-        return err
-    }
-
-    tokens := internal.Lex(string(content))
-    internal.Parse(tokens)
-    return nil
-}
-
-func getFileExtension(filename string) string {
-    dotIndex := len(filename) - len(".hue")
-    if dotIndex >= 0 && filename[dotIndex:] == ".hue" {
-        return ".hue"
-    }
-    return ""
+	tokens := internal.Lex(string(content))
+	parser := internal.NewParser(tokens)
+	ast := parser.Parse()
+	fmt.Println("AST gerado: \n", ast)
+	return nil
 }
 
 func runRepl() {
-    fmt.Println("Welcome to the hue language REPL!")
-    // Implementação anterior do REPL aqui.
+	fmt.Println("Bem-vindo ao REPL da linguagem hue!")
+	for {
+		fmt.Print("hue> ")
+		var line string
+		_, err := fmt.Scanln(&line)
+		if err != nil {
+			fmt.Println("Erro ao ler entrada:", err)
+			continue
+		}
+
+		tokens := internal.Lex(line)
+		parser := internal.NewParser(tokens)
+		ast := parser.Parse()
+		fmt.Println("AST gerado: \n", ast)
+	}
 }
